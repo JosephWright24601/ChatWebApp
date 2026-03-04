@@ -21,7 +21,7 @@ const messages = ref<any[]>([]);
 const messageInput = ref("");
 
 onMounted(() => {
-  connectWebSocket((msg) => {
+  connectWebSocket("general", (msg) => {
     messages.value.push(msg);
   });
 });
@@ -36,7 +36,6 @@ function handleSend() {
   sendMessage({
     sender: "Joe",
     content: messageInput.value,
-    roomId: "general"
   });
 
   messageInput.value = "";
