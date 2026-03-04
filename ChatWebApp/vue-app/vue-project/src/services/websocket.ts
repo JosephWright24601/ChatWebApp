@@ -1,9 +1,15 @@
-import SockJS from "sockjs-client/dist/sockjs"
+import SockJS from "sockjs-client/dist/sockjs";
 import { Client } from "@stomp/stompjs";
 
 let stompClient: Client | null = null;
+let currentRoomId: string = "general";
 
-export function connectWebSocket(onMessage: (msg: any) => void) {
+export function connectWebSocket(
+  roomId: string,
+  onMessage: (msg: any) => void
+) {
+  currentRoomId = roomId;
+
   const socket = new SockJS("http://localhost:8080/chat");
 
   stompClient = new Client({
@@ -12,7 +18,7 @@ export function connectWebSocket(onMessage: (msg: any) => void) {
     onConnect: () => {
       console.log("Connected to WebSocket");
 
-      stompClient?.subscribe("/topic/messages", (message) => {
+      stompClient?.subscribe(`/topic/room/${currentRoomId}`, (message) => {
         const parsed = JSON.parse(message.body);
         onMessage(parsed);
       });
@@ -27,8 +33,13 @@ export function connectWebSocket(onMessage: (msg: any) => void) {
 }
 
 export function sendMessage(message: any) {
-  stompClient?.publish({
-    destination: "/app/sendMessage",
+  if (!stompClient || !stompClient.connected) {
+    console.error("STOMP client not connected");
+    return;
+  }
+
+  stompClient.publish({
+    destination: `/app/chat/${currentRoomId}`,
     body: JSON.stringify(message),
   });
 }
