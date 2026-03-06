@@ -20,10 +20,15 @@ import { connectWebSocket, sendMessage, disconnectWebSocket } from "@/services/w
 const messages = ref<any[]>([]);
 const messageInput = ref("");
 
-onMounted(() => {
-  connectWebSocket("general", (msg) => {
-    messages.value.push(msg);
-  });
+function handleMessage(msg: any) {
+  messages.value.push(msg);
+}
+
+onMounted(async () => {
+  const response = await fetch("http://localhost:8080/messages/general");
+  messages.value = await response.json();
+
+  connectWebSocket("general", handleMessage);
 });
 
 onBeforeUnmount(() => {

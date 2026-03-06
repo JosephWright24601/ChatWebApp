@@ -1,9 +1,25 @@
 package org.josephwright.chatwebapp.model;
+import jakarta.persistence.*;
 
+@Entity
 public class ChatMessage {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String sender;
     private String content;
     private String roomId;
+
+    public ChatMessage() {}
+
+    public ChatMessage(String sender, String content, String roomId) {
+        this.sender = sender;
+        this.content = content;
+        this.roomId = roomId;
+    }
+
+    public Long getId() { return id; }
 
     public String getSender()
     {
