@@ -7,6 +7,8 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 import org.josephwright.chatwebapp.repository.ChatMessageRepository;
 
+import java.time.LocalDateTime;
+
 @Controller
 public class ChatController
 {
@@ -22,7 +24,14 @@ public class ChatController
             @DestinationVariable String roomId,
             ChatMessage message
     ) {
+
+        if (message.getContent() == null || message.getContent().isBlank()) {
+            return null; // ignore typing events
+        }
+
         message.setRoomId(roomId);
+        message.setTimestamp(LocalDateTime.now());
+
         repository.save(message);
         return message;
     }
