@@ -1,6 +1,9 @@
 package org.josephwright.chatwebapp.model;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Entity
 public class ChatMessage {
     @Id
@@ -10,6 +13,7 @@ public class ChatMessage {
     private String sender;
     private String content;
     private String roomId;
+    private LocalDateTime timestamp;
 
     public ChatMessage() {}
 
@@ -50,4 +54,8 @@ public class ChatMessage {
     {
         this.roomId = roomId;
     }
+
+    public LocalDateTime getTimestamp() { return timestamp; }
+
+    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 }

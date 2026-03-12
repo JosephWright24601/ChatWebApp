@@ -18,14 +18,30 @@
         <v-container>
           <h2># {{ currentRoom }}</h2>
           <div class="chat-box">
-            <div v-for="(msg, index) in messages" :key="index">
-              <strong>{{ msg.sender }}:</strong> {{ msg.content }}
+            <transition-group name="chat">
+              <div
+                v-for="(msg, index) in messages"
+                :key="index"
+                class="message"
+              >
+                <div class="bubble">
+                  <div class="message-header">
+                    <strong>{{ msg.sender }}</strong>
+                    <span class="time">{{ formatTime(msg.timestamp) }}</span>
+                  </div>
+                  <div>{{ msg.content }}</div>
+                </div>
+              </div>
+            </transition-group>
+            <div v-if="typingUser" class="typing-indicator">
+              {{ typingUser }} is typing...
             </div>
           </div>
           <div class="input-row">
             <v-text-field
               v-model="messageInput"
               label="Type a message"
+              @input="sendTyping"
               @keyup.enter="handleSend"
               hide-details
             />
@@ -40,15 +56,41 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { connectWebSocket, sendMessage, disconnectWebSocket } from "@/services/websocket";
+import { nextTick } from "vue";
 
 const rooms = ["general", "gaming", "coding", "random"];
 const currentRoom = ref("general");
 
 const messages = ref<any[]>([]);
 const messageInput = ref("");
+const typingUser = ref<string | null>(null)
+
+let typingTimeout: any;
 
 function handleMessage(msg: any) {
+  if (!msg) 
+    return;
+
+  if (msg.typing) {
+    typingUser.value = msg.sender;
+
+    setTimeout(() => {
+      typingUser.value = null
+    }, 2000)
+
+    return;
+  }
+
+  if (!msg.content) 
+    return;
+
   messages.value.push(msg);
+
+  nextTick(() => { //TODO: Update to show a button that a new message has arrived if the user is scrolled up
+    const box = document.querySelector(".chat-box");
+    if (box) 
+      box.scrollTop = box.scrollHeight;
+  })
 }
 
 async function loadHistory(room: string) {
@@ -78,6 +120,23 @@ function handleSend() {
   messageInput.value = "";
 }
 
+function formatTime(timestamp: string) {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function sendTyping() {
+  clearTimeout(typingTimeout);
+  sendMessage({
+    sender: "Joe",
+    typing: true
+  });
+
+  typingTimeout = setTimeout(() => {
+    typingUser.value = null;
+  }, 1500);
+}
+
 onMounted(async () => {
   await loadHistory(currentRoom.value);
   connectWebSocket(currentRoom.value, handleMessage);
@@ -90,16 +149,62 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .chat-box {
-  border: 1px solid #ccc;
-  height: 400px;
+  height: 420px;
   overflow-y: auto;
-  padding: 10px;
-  margin-bottom: 10px;
-  background: white;
+  padding: 15px;
+  background: #1e1e1e;
+  border-radius: 10px;
+  margin-bottom: 12px;
 }
 
-.input-row {
+.message {
   display: flex;
-  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.bubble {
+  background: #2f3136;
+  padding: 10px 14px;
+  border-radius: 16px;
+  max-width: 60%;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.bubble strong {
+  font-size: 0.9rem;
+  color: #7289da;
+}
+
+.chat-enter-active {
+  transition: all 0.25s ease;
+}
+
+.chat-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.chat-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.message-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.typing-indicator {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-bottom: 8px;
+  font-style: italic;
 }
 </style>
