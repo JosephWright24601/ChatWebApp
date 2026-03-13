@@ -13,6 +13,16 @@
             <v-list-item-title># {{ room }}</v-list-item-title>
           </v-list-item>
         </v-list>
+        <v-divider class="my-3"></v-divider>
+        <v-list-subheader>Online</v-list-subheader>
+        <v-list-item
+          v-for="user in onlineUsers"
+          :key="user"
+        >
+          <v-list-item-title>
+            🟢 {{ user }}
+          </v-list-item-title>
+        </v-list-item>
       </v-navigation-drawer>
       <v-main>
         <v-container>
@@ -63,7 +73,8 @@ const currentRoom = ref("general");
 
 const messages = ref<any[]>([]);
 const messageInput = ref("");
-const typingUser = ref<string | null>(null)
+const typingUser = ref<string | null>(null);
+const onlineUsers = ref<string[]>([]);
 
 let typingTimeout: any;
 
@@ -106,7 +117,13 @@ async function switchRoom(room: string) {
   messages.value = [];
 
   await loadHistory(room);
-  connectWebSocket(room, handleMessage);
+  connectWebSocket(
+    room, 
+    handleMessage, 
+    (users) => {
+      onlineUsers.value = users
+    }
+  );
 }
 
 function handleSend() {
@@ -139,7 +156,13 @@ function sendTyping() {
 
 onMounted(async () => {
   await loadHistory(currentRoom.value);
-  connectWebSocket(currentRoom.value, handleMessage);
+  connectWebSocket(
+    currentRoom.value, 
+    handleMessage, 
+    (users) => {
+      onlineUsers.value = users
+    }
+  );
 });
 
 onBeforeUnmount(() => {
