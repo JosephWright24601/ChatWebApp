@@ -6,7 +6,8 @@ let currentRoomId: string = "general";
 
 export function connectWebSocket(
   roomId: string,
-  onMessage: (msg: any) => void
+  onMessage: (msg: any) => void,
+  onUsers?: (users: string[]) => void
 ) {
   currentRoomId = roomId;
 
@@ -21,6 +22,11 @@ export function connectWebSocket(
       stompClient?.subscribe(`/topic/room/${currentRoomId}`, (message) => {
         const parsed = JSON.parse(message.body);
         onMessage(parsed);
+      });
+
+      stompClient?.subscribe("/topic/users", (message) => {
+        const users = JSON.parse(message.body);
+        onUsers?.(users);
       });
     },
 
