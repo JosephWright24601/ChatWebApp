@@ -5,7 +5,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
-import org.springframework.web.socket.messaging.SessionConnectedEvent;
+import org.springframework.web.socket.messaging.SessionConnectEvent;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 
 @Component
 public class WebSocketEventListener {
@@ -20,8 +21,15 @@ public class WebSocketEventListener {
     }
 
     @EventListener
-    public void handleWebSocketConnect(SessionConnectedEvent event) {
-        String username = "User-" + event.getMessage().getHeaders().get("simpSessionId");
+    public void handleWebSocketConnect(SessionConnectEvent event) {
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+        String username = accessor.getFirstNativeHeader("username");
+
+        if (username == null) {
+            username = "Anonymous";
+        }
+
+        accessor.getSessionAttributes().put("username", username);
         onlineUserService.addUser(username);
 
         messagingTemplate.convertAndSend(
@@ -32,8 +40,12 @@ public class WebSocketEventListener {
 
     @EventListener
     public void handleWebSocketDisconnect(SessionDisconnectEvent event) {
-        String username = "User-" + event.getSessionId();
-        onlineUserService.removeUser(username);
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+        String username = (String) accessor.getSessionAttributes().get("username");
+
+        if (username != null) {
+            onlineUserService.removeUser(username);
+        }
 
         messagingTemplate.convertAndSend(
                 "/topic/users",

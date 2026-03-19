@@ -67,9 +67,13 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { connectWebSocket, sendMessage, disconnectWebSocket } from "@/services/websocket";
 import { nextTick } from "vue";
+import { useUserStore } from "@/stores/user";
+import { useRouter } from "vue-router";
 
 const rooms = ["general", "gaming", "coding", "random"];
 const currentRoom = ref("general");
+const userStore = useUserStore();
+const router = useRouter();
 
 const messages = ref<any[]>([]);
 const messageInput = ref("");
@@ -119,6 +123,7 @@ async function switchRoom(room: string) {
   await loadHistory(room);
   connectWebSocket(
     room, 
+    userStore.username,
     handleMessage, 
     (users) => {
       onlineUsers.value = users
@@ -130,7 +135,7 @@ function handleSend() {
   if (!messageInput.value) return;
 
   sendMessage({
-    sender: "Joe",
+    sender: userStore.username,
     content: messageInput.value,
   });
 
@@ -145,19 +150,23 @@ function formatTime(timestamp: string) {
 function sendTyping() {
   clearTimeout(typingTimeout);
   sendMessage({
-    sender: "Joe",
+    sender: userStore.username,
     typing: true
   });
 
-  typingTimeout = setTimeout(() => {
-    typingUser.value = null;
-  }, 1500);
+  typingTimeout = setTimeout(() => {}, 1500);
 }
 
 onMounted(async () => {
+  if (!userStore.username) {
+    router.push("/");
+    return;
+  }
+
   await loadHistory(currentRoom.value);
   connectWebSocket(
     currentRoom.value, 
+    userStore.username,
     handleMessage, 
     (users) => {
       onlineUsers.value = users
