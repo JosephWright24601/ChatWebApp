@@ -6,6 +6,7 @@ let currentRoomId: string = "general";
 
 export function connectWebSocket(
   roomId: string,
+  username: string,
   onMessage: (msg: any) => void,
   onUsers?: (users: string[]) => void
 ) {
@@ -15,7 +16,9 @@ export function connectWebSocket(
 
   stompClient = new Client({
     webSocketFactory: () => socket,
-
+    connectHeaders: {
+      username: username,
+    },
     onConnect: () => {
       console.log("Connected to WebSocket");
 
@@ -29,7 +32,6 @@ export function connectWebSocket(
         onUsers?.(users);
       });
     },
-
     onStompError: (frame) => {
       console.error("Broker error:", frame.headers["message"]);
     },
